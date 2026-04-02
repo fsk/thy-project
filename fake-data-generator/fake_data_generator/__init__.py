@@ -1,3 +1,3 @@
-from .generator import generate_fake_users
+from fake_data_generator.postgres_seed import run_seed
 
-__all__ = ["generate_fake_users"]
+__all__ = ["run_seed"]
