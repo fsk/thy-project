@@ -59,7 +59,6 @@ LOCATIONS: tuple[LocationRow, ...] = (
     LocationRow("JFK", "John F. Kennedy Airport", "United States", "New York"),
 )
 
-# Multiple options per leg => separate routes (case study)
 TRANSPORTATIONS: tuple[TransportationRow, ...] = (
     # Istanbul area -> Istanbul airports
     TransportationRow("TXM", "IST", "UBER", (1, 2, 3, 4, 5, 6, 7)),
