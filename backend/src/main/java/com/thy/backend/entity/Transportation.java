@@ -15,8 +15,14 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -45,4 +51,66 @@ public class Transportation extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "operating_day", nullable = false, length = 20)
     private Set<DayOfWeek> operatingDays = new HashSet<>();
+
+    public boolean isFlight() {
+        return transportationType == TransportationType.FLIGHT;
+    }
+
+    public boolean isAvailableOn(LocalDate date) {
+        if (operatingDays == null || operatingDays.isEmpty()) {
+            return false;
+        }
+        return operatingDays.contains(date.getDayOfWeek());
+    }
+
+    /**
+     * Case study kuralları: en fazla 3 bacak, tam bir uçuş, uçuştan önce/sonra en fazla birer transfer.
+     *
+     * @param connectedTransportationSequence bağlantılı sıra (önceki varış = sonraki kalkış), DFS path’i
+     * @return kurallara uyuyorsa {@code true}
+     */
+    public static boolean validationOfTransportationRoute(List<Transportation> connectedTransportationSequence) {
+        int n = connectedTransportationSequence.size();
+        if (n < 1 || n > 3) {
+            return false;
+        }
+        long flightCount = connectedTransportationSequence.stream().filter(Transportation::isFlight).count();
+        if (flightCount != 1) {
+            return false;
+        }
+        int flightIndex = -1;
+        for (int i = 0; i < n; i++) {
+            if (connectedTransportationSequence.get(i).isFlight()) {
+                flightIndex = i;
+                break;
+            }
+        }
+        if (flightIndex > 1) {
+            return false;
+        }
+        if (n - flightIndex - 1 > 1) {
+            return false;
+        }
+        for (int i = 0; i < flightIndex; i++) {
+            if (connectedTransportationSequence.get(i).isFlight()) {
+                return false;
+            }
+        }
+        for (int i = flightIndex + 1; i < n; i++) {
+            if (connectedTransportationSequence.get(i).isFlight()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    public static Map<UUID, List<Transportation>> adjacencyMatris(List<Transportation> transportations) {
+        Map<UUID, List<Transportation>> adjacencyMatrix = new HashMap<>();
+        for (Transportation t : transportations) {
+            UUID from = t.getOriginLocation().getId();
+            adjacencyMatrix.computeIfAbsent(from, k -> new ArrayList<>()).add(t);
+        }
+        return adjacencyMatrix;
+    }
 }
