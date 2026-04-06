@@ -1,3 +1,5 @@
+server:
+  port: ${PORT:8080}
 spring:
   application:
     name: backend
@@ -12,3 +14,11 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operations-sorter: method
+    tags-sorter: alpha
