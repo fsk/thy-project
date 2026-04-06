@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/backend',
+        '-f',
+        'backend/Dockerfile',
+        'backend'
+      ]
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/backend'
