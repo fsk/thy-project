@@ -2,9 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 /**
- * GitHub Pages proje sitesi: https://user.github.io/REPO/
- * Build sirasinda: VITE_BASE_PATH=/REPO/  (basinda ve sonunda / olmali sekilde normalize edilir)
- * User site (REPO = owner.github.io): VITE_BASE_PATH=/ veya hic verme
+ * GitHub Pages (proje sitesi): https://USER.github.io/REPO/ → build'de VITE_BASE_PATH=/REPO/
+ * Deploy: npm run deploy (predeploy VITE_BASE_PATH set eder)
+ * Local dev: VITE_BASE_PATH verme → base "/", http://localhost:5173/
  */
 function viteBase() {
   const raw = process.env.VITE_BASE_PATH;
