@@ -32,7 +32,8 @@ public class SecurityConfig {
         c.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://thy-project-236641329758.europe-west1.run.app"));
+                "https://thy-project-236641329758.europe-west1.run.app",
+                "https://fsk.github.io"));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
         c.setAllowedHeaders(List.of("*"));
         c.setExposedHeaders(List.of("WWW-Authenticate"));

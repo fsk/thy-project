@@ -53,8 +53,12 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const baseUrl = import.meta.env.BASE_URL;
+  const basename =
+    baseUrl === "/" || baseUrl === "" ? undefined : baseUrl.replace(/\/$/, "");
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
