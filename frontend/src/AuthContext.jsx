@@ -1,11 +1,6 @@
+import axios from "axios";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import {
-  apiFetch,
-  clearStoredCredentials,
-  getStoredCredentials,
-  readApiJson,
-  setStoredCredentials,
-} from "./api";
+import { api, clearStoredCredentials, getStoredCredentials, setStoredCredentials } from "./api";
 
 const AuthContext = createContext(null);
 
@@ -33,15 +28,17 @@ export function AuthProvider({ children }) {
       return;
     }
     setUser({ username: creds.username });
-    const res = await apiFetch("/api/locations?page=0&size=1", { method: "GET" });
-    if (res.status === 200) {
+    try {
+      await api.get("/api/locations", { params: { page: 0, size: 1 } });
       setRole("admin");
-    } else if (res.status === 403) {
-      setRole("agency");
-    } else if (res.status === 401) {
-      logout();
-    } else {
-      setRole(null);
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.status === 403) {
+        setRole("agency");
+      } else if (axios.isAxiosError(e) && e.response?.status === 401) {
+        logout();
+      } else {
+        setRole(null);
+      }
     }
     setLoading(false);
   }, [logout]);
@@ -54,28 +51,32 @@ export function AuthProvider({ children }) {
     async (username, password) => {
       setStoredCredentials(username, password);
       setLoading(true);
-      const res = await apiFetch("/api/locations?page=0&size=1", { method: "GET" });
-      if (res.status === 401) {
-        logout();
-        setLoading(false);
-        return { ok: false, message: "Username or password is incorrect." };
-      }
-      if (res.status === 200) {
+      try {
+        await api.get("/api/locations", { params: { page: 0, size: 1 } });
         setUser({ username });
         setRole("admin");
         setLoading(false);
         return { ok: true };
-      }
-      // Credentials are valid, but /api/locations is forbidden -> agency role
-      if (res.status === 403) {
-        setUser({ username });
-        setRole("agency");
+      } catch (e) {
+        if (axios.isAxiosError(e) && e.response?.status === 401) {
+          logout();
+          setLoading(false);
+          return { ok: false, message: "Username or password is incorrect." };
+        }
+        if (axios.isAxiosError(e) && e.response?.status === 403) {
+          setUser({ username });
+          setRole("agency");
+          setLoading(false);
+          return { ok: true };
+        }
+        const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+        const body = axios.isAxiosError(e) ? e.response?.data : undefined;
         setLoading(false);
-        return { ok: true };
+        return {
+          ok: false,
+          message: body?.errorMessage || (status ? `Server error (${status})` : "Request failed."),
+        };
       }
-      const body = await readApiJson(res);
-      setLoading(false);
-      return { ok: false, message: body?.errorMessage || `Server error (${res.status})` };
     },
     [logout],
   );

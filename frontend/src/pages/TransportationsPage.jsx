@@ -1,6 +1,7 @@
+import axios from "axios";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import PaginationBar from "../components/PaginationBar";
-import { apiFetch, readApiJson } from "../api";
+import { api } from "../api";
 import "./Pages.css";
 
 const TYPES = ["FLIGHT", "BUS", "SUBWAY", "UBER"];
@@ -33,14 +34,15 @@ export default function TransportationsPage() {
 
   const loadLocationOptions = useCallback(async () => {
     setLocLoading(true);
-    const res = await apiFetch(`/api/locations?page=0&size=${LOCATION_PICKER_SIZE}`);
-    const body = await readApiJson(res);
-    if (!res.ok) {
-      setError(body?.errorMessage || "Locations not found");
-      setLocations([]);
-    } else {
+    try {
+      const res = await api.get("/api/locations", { params: { page: 0, size: LOCATION_PICKER_SIZE } });
+      const body = res.data;
       setLocations(body?.data?.content || []);
       setError("");
+    } catch (e) {
+      const body = axios.isAxiosError(e) ? e.response?.data : undefined;
+      setError(body?.errorMessage || "Locations not found");
+      setLocations([]);
     }
     setLocLoading(false);
   }, []);
@@ -48,16 +50,17 @@ export default function TransportationsPage() {
   const loadTransportations = useCallback(async () => {
     setLoading(true);
     setError("");
-    const res = await apiFetch(`/api/transportations?page=${page}&size=${PAGE_SIZE}`);
-    const trBody = await readApiJson(res);
-    if (!res.ok) {
-      setError(trBody?.errorMessage || "Transportations not found");
-      setItems([]);
-    } else {
+    try {
+      const res = await api.get("/api/transportations", { params: { page, size: PAGE_SIZE } });
+      const trBody = res.data;
       const d = trBody?.data;
       setItems(d?.content || []);
       setTotalPages(d?.totalPages ?? 0);
       setTotalElements(d?.totalElements ?? 0);
+    } catch (e) {
+      const trBody = axios.isAxiosError(e) ? e.response?.data : undefined;
+      setError(trBody?.errorMessage || "Transportations not found");
+      setItems([]);
     }
     setLoading(false);
   }, [page]);
@@ -121,44 +124,47 @@ export default function TransportationsPage() {
     e.preventDefault();
     const body = bodyFromForm();
     if (!body) return;
-    const res = await apiFetch("/api/transportations", { method: "POST", body });
-    const j = await readApiJson(res);
-    if (!res.ok) {
-      alert(j?.errorMessage || `Error ${res.status}`);
-      return;
+    try {
+      await api.post("/api/transportations", body);
+      setForm(emptyForm(locations));
+      if (page === 0) loadTransportations();
+      else setPage(0);
+    } catch (err) {
+      const j = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(j?.errorMessage || `Error ${status}`);
     }
-    setForm(emptyForm(locations));
-    if (page === 0) loadTransportations();
-    else setPage(0);
   }
 
   async function handleUpdate(e) {
     e.preventDefault();
     const body = bodyFromForm();
     if (!body || !editingId) return;
-    const res = await apiFetch(`/api/transportations/${editingId}`, { method: "PUT", body });
-    const j = await readApiJson(res);
-    if (!res.ok) {
-      alert(j?.errorMessage || `Error ${res.status}`);
-      return;
+    try {
+      await api.put(`/api/transportations/${editingId}`, body);
+      editingIdRef.current = null;
+      setEditingId(null);
+      await loadTransportations();
+    } catch (err) {
+      const j = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(j?.errorMessage || `Error ${status}`);
     }
-    editingIdRef.current = null;
-    setEditingId(null);
-    await loadTransportations();
   }
 
   async function handleDelete(id) {
     if (!confirm("Are you sure you want to delete this transportation?")) return;
-    const res = await apiFetch(`/api/transportations/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const j = await readApiJson(res);
-      alert(j?.errorMessage || `Error ${res.status}`);
-      return;
-    }
-    if (items.length === 1 && page > 0) {
-      setPage((p) => p - 1);
-    } else {
-      loadTransportations();
+    try {
+      await api.delete(`/api/transportations/${id}`);
+      if (items.length === 1 && page > 0) {
+        setPage((p) => p - 1);
+      } else {
+        loadTransportations();
+      }
+    } catch (err) {
+      const j = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(j?.errorMessage || `Error ${status}`);
     }
   }
 

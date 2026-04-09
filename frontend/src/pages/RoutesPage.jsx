@@ -1,6 +1,7 @@
+import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 import PaginationBar from "../components/PaginationBar";
-import { apiFetch, readApiJson } from "../api";
+import { api } from "../api";
 import { useAuth } from "../AuthContext";
 import "./Pages.css";
 
@@ -24,13 +25,17 @@ export default function RoutesPage() {
 
   const loadLocations = useCallback(async () => {
     if (!isAdmin) return;
-    const res = await apiFetch(`/api/locations?page=0&size=${LOCATION_PICKER_SIZE}`);
-    const body = await readApiJson(res);
-    if (res.ok && body?.data?.content?.length) {
-      const list = body.data.content;
-      setLocations(list);
-      setOriginId(list[0].id);
-      setDestId(list.length > 1 ? list[1].id : list[0].id);
+    try {
+      const res = await api.get("/api/locations", { params: { page: 0, size: LOCATION_PICKER_SIZE } });
+      const body = res.data;
+      if (body?.data?.content?.length) {
+        const list = body.data.content;
+        setLocations(list);
+        setOriginId(list[0].id);
+        setDestId(list.length > 1 ? list[1].id : list[0].id);
+      }
+    } catch {
+      /* admin locations optional for UI */
     }
   }, [isAdmin]);
 
@@ -42,28 +47,31 @@ export default function RoutesPage() {
     setLoading(true);
     setError("");
     setSelected(null);
-    const q = [
-      `originLocationId=${encodeURIComponent(originId)}`,
-      `destinationLocationId=${encodeURIComponent(destId)}`,
-      `date=${encodeURIComponent(date)}`,
-      `page=${pageIndex}`,
-      `size=${ROUTE_PAGE_SIZE}`,
-    ].join("&");
-    const res = await apiFetch(`/api/routes?${q}`);
-    const body = await readApiJson(res);
-    if (!res.ok) {
-      setRoutes([]);
-      setRouteTotalPages(0);
-      setRouteTotalElements(0);
-      setHasQueried(true);
-      setError(body?.errorMessage || `Request failed (${res.status})`);
-    } else {
+    try {
+      const res = await api.get("/api/routes", {
+        params: {
+          originLocationId: originId,
+          destinationLocationId: destId,
+          date,
+          page: pageIndex,
+          size: ROUTE_PAGE_SIZE,
+        },
+      });
+      const body = res.data;
       const d = body?.data;
       setRoutes(d?.content || []);
       setRouteTotalPages(d?.totalPages ?? 0);
       setRouteTotalElements(d?.totalElements ?? 0);
       setRoutePage(typeof d?.number === "number" ? d.number : pageIndex);
       setHasQueried(true);
+    } catch (e) {
+      const body = axios.isAxiosError(e) ? e.response?.data : undefined;
+      const status = axios.isAxiosError(e) ? e.response?.status : "?";
+      setRoutes([]);
+      setRouteTotalPages(0);
+      setRouteTotalElements(0);
+      setHasQueried(true);
+      setError(body?.errorMessage || `Request failed (${status})`);
     }
     setLoading(false);
   }

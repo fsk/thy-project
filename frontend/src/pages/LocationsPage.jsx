@@ -1,6 +1,7 @@
+import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 import PaginationBar from "../components/PaginationBar";
-import { apiFetch, readApiJson } from "../api";
+import { api } from "../api";
 import "./Pages.css";
 
 const emptyForm = { name: "", country: "", city: "", locationCode: "" };
@@ -19,16 +20,18 @@ export default function LocationsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const res = await apiFetch(`/api/locations?page=${page}&size=${PAGE_SIZE}`);
-    const body = await readApiJson(res);
-    if (!res.ok) {
-      setError(body?.errorMessage || `List not found (${res.status})`);
-      setItems([]);
-    } else {
+    try {
+      const res = await api.get("/api/locations", { params: { page, size: PAGE_SIZE } });
+      const body = res.data;
       const d = body?.data;
       setItems(d?.content || []);
       setTotalPages(d?.totalPages ?? 0);
       setTotalElements(d?.totalElements ?? 0);
+    } catch (e) {
+      const body = axios.isAxiosError(e) ? e.response?.data : undefined;
+      const status = axios.isAxiosError(e) ? e.response?.status : "?";
+      setError(body?.errorMessage || `List not found (${status})`);
+      setItems([]);
     }
     setLoading(false);
   }, [page]);
@@ -54,42 +57,45 @@ export default function LocationsPage() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    const res = await apiFetch("/api/locations", { method: "POST", body: form });
-    const body = await readApiJson(res);
-    if (!res.ok) {
-      alert(body?.errorMessage || body?.message || `Error ${res.status}`);
-      return;
+    try {
+      await api.post("/api/locations", form);
+      setForm(emptyForm);
+      if (page === 0) load();
+      else setPage(0);
+    } catch (err) {
+      const body = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(body?.errorMessage || body?.message || `Error ${status}`);
     }
-    setForm(emptyForm);
-    if (page === 0) load();
-    else setPage(0);
   }
 
   async function handleUpdate(e) {
     e.preventDefault();
     if (!editingId) return;
-    const res = await apiFetch(`/api/locations/${editingId}`, { method: "PUT", body: form });
-    const body = await readApiJson(res);
-    if (!res.ok) {
-      alert(body?.errorMessage || `Error ${res.status}`);
-      return;
+    try {
+      await api.put(`/api/locations/${editingId}`, form);
+      cancelEdit();
+      load();
+    } catch (err) {
+      const body = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(body?.errorMessage || `Error ${status}`);
     }
-    cancelEdit();
-    load();
   }
 
   async function handleDelete(id) {
     if (!confirm("Are you sure you want to delete this location?")) return;
-    const res = await apiFetch(`/api/locations/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await readApiJson(res);
-      alert(body?.errorMessage || `Error ${res.status}`);
-      return;
-    }
-    if (items.length === 1 && page > 0) {
-      setPage((p) => p - 1);
-    } else {
-      load();
+    try {
+      await api.delete(`/api/locations/${id}`);
+      if (items.length === 1 && page > 0) {
+        setPage((p) => p - 1);
+      } else {
+        load();
+      }
+    } catch (err) {
+      const body = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const status = axios.isAxiosError(err) ? err.response?.status : "?";
+      alert(body?.errorMessage || `Error ${status}`);
     }
   }
 

@@ -7,7 +7,6 @@ import LocationsPage from "./pages/LocationsPage";
 import RoutesPage from "./pages/RoutesPage";
 import TransportationsPage from "./pages/TransportationsPage";
 
-/** Redirect to /login when not authenticated */
 function RequireAuth() {
   const { user, loading } = useAuth();
   if (loading) {
@@ -23,7 +22,6 @@ function RequireAuth() {
   return <Outlet />;
 }
 
-/** Admin only - non-admin users are redirected to /routes */
 function AdminOnly() {
   const { isAdmin } = useAuth();
   if (!isAdmin) {
