@@ -11,10 +11,11 @@ import com.thy.backend.mapper.TransportationMapper;
 import com.thy.backend.repository.LocationRepository;
 import com.thy.backend.repository.TransportationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,8 +39,8 @@ public class TransportationService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransportationResponse> findAll() {
-        return transportationRepository.findAll().stream().map(transportationMapper::toResponse).toList();
+    public Page<TransportationResponse> findAll(Pageable pageable) {
+        return transportationRepository.findAllBy(pageable).map(transportationMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

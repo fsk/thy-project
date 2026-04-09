@@ -10,10 +10,11 @@ import com.thy.backend.mapper.LocationMapper;
 import com.thy.backend.repository.LocationRepository;
 import com.thy.backend.repository.TransportationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,16 +27,22 @@ public class LocationService {
 
     @Transactional
     public LocationResponse create(LocationRequest request) {
-        if (locationRepository.existsByLocationCode(request.getLocationCode())) {
-            throw new DuplicateLocationCodeException(request.getLocationCode());
+
+        String locationCode = request.getLocationCode();
+        boolean isExistByLocationCode = locationRepository.existsByLocationCode(locationCode);
+
+        if (isExistByLocationCode) {
+            throw new DuplicateLocationCodeException(locationCode);
         }
+
         Location entity = locationMapper.toEntity(request);
         return locationMapper.toResponse(locationRepository.save(entity));
+
     }
 
     @Transactional(readOnly = true)
-    public List<LocationResponse> findAll() {
-        return locationRepository.findAll().stream().map(locationMapper::toResponse).toList();
+    public Page<LocationResponse> findAll(Pageable pageable) {
+        return locationRepository.findAll(pageable).map(locationMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -45,18 +52,29 @@ public class LocationService {
 
     @Transactional
     public LocationResponse update(UUID id, LocationRequest request) {
+
+        String locationCode = request.getLocationCode();
+        boolean existsByLocationCodeAndIdNot = locationRepository.existsByLocationCodeAndIdNot(locationCode, id);
+
         Location entity = getById(id);
-        if (locationRepository.existsByLocationCodeAndIdNot(request.getLocationCode(), id)) {
-            throw new DuplicateLocationCodeException(request.getLocationCode());
+
+        if (existsByLocationCodeAndIdNot) {
+            throw new DuplicateLocationCodeException(locationCode);
         }
+
         locationMapper.updateEntity(request, entity);
         return locationMapper.toResponse(locationRepository.save(entity));
     }
 
     @Transactional
     public void delete(UUID id) {
+
+        boolean existsByOriginLocation_id = transportationRepository.existsByOriginLocation_Id(id);
+        boolean existsByDestinationLocation_id = transportationRepository.existsByDestinationLocation_Id(id);
+
         getById(id);
-        if (transportationRepository.existsByOriginLocation_Id(id) || transportationRepository.existsByDestinationLocation_Id(id)) {
+
+        if (existsByOriginLocation_id || existsByDestinationLocation_id) {
             throw new LocationReferencedByTransportationException(id);
         }
         locationRepository.deleteById(id);

@@ -4,9 +4,12 @@ import com.thy.backend.api.ApiResponse;
 import com.thy.backend.dto.transportation.TransportationRequest;
 import com.thy.backend.dto.transportation.TransportationResponse;
 import com.thy.backend.service.TransportationService;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -41,11 +43,11 @@ public class TransportationController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TransportationResponse>>> list() {
-        return ResponseEntity.ok(
-                ApiResponse.<List<TransportationResponse>>builder()
+    public ResponseEntity<ApiResponse<Page<TransportationResponse>>> list(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<Page<TransportationResponse>>builder()
                         .success(true)
-                        .data(transportationService.findAll())
+                        .data(transportationService.findAll(pageable))
                         .resultMessage("Transportations listed successfully")
                         .build()
         );
@@ -53,7 +55,7 @@ public class TransportationController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TransportationResponse>> get(@PathVariable UUID id) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<TransportationResponse>builder()
                         .success(true)
                         .data(transportationService.findById(id))
@@ -63,7 +65,7 @@ public class TransportationController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<TransportationResponse>> update(@PathVariable UUID id, @Valid @RequestBody TransportationRequest request) {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<TransportationResponse>builder()
                         .success(true)
                         .data(transportationService.update(id, request))
@@ -75,7 +77,7 @@ public class TransportationController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         transportationService.delete(id);
-        return ResponseEntity.ok(
+        return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<Void>builder()
                         .success(true)
                         .resultMessage("Transportation deleted successfully")
