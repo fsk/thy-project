@@ -68,16 +68,19 @@ public class Transportation extends BaseEntity {
 
         int n = connectedTransportationSequence.size();
 
+        // Rota en az 1 en fazla 3 adimdan olusmali.
         if (n < 1 || n > 3) {
             return false;
         }
 
+        // Rotada en fazla 1 tane flight olmali.
         long flightCount = connectedTransportationSequence.stream().filter(Transportation::isFlight).count();
 
         if (flightCount != 1) {
             return false;
         }
 
+        // Flight'in index'ini bul.
         int flightIndex = -1;
 
         for (int i = 0; i < n; i++) {
@@ -87,24 +90,15 @@ public class Transportation extends BaseEntity {
             }
         }
 
+        // Flight'in index'i 1'den buyuk ise false. Cunku flight ilk ya da ikinci olmali.
+        // Bus Bus flight olmaz. Ya da bus uber flight olmaz.
         if (flightIndex > 1) {
             return false;
         }
 
+        // flight tan sonra sadece 1 tane adim olmali.
         if (n - flightIndex - 1 > 1) {
             return false;
-        }
-
-        for (int i = 0; i < flightIndex; i++) {
-            if (connectedTransportationSequence.get(i).isFlight()) {
-                return false;
-            }
-        }
-
-        for (int i = flightIndex + 1; i < n; i++) {
-            if (connectedTransportationSequence.get(i).isFlight()) {
-                return false;
-            }
         }
 
         return true;
